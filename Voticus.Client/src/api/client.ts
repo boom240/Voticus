@@ -1,15 +1,25 @@
 // src/api/client.ts
 
-// dev only
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "https://localhost:5001";
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL as string;
 
-async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
+async function request<T>(
+  path: string,
+  options: RequestInit = {}
+): Promise<T> {
+  const token = localStorage.getItem("token");
+
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+    ...(options.headers as Record<string, string>),
+  };
+
+  if (token) {
+    headers["Authorization"] = `Bearer ${token}`;
+  }
+
   const response = await fetch(`${API_BASE_URL}${path}`, {
-    headers: {
-      "Content-Type": "application/json",
-      ...(options.headers || {}),
-    },
     ...options,
+    headers,
   });
 
   if (!response.ok) {
@@ -22,14 +32,35 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
     return undefined as T;
   }
 
-  return (await response.json()) as T;
+  const contentType = response.headers.get("content-type");
+  if (contentType && contentType.includes("application/json")) {
+    return (await response.json()) as T;
+  }
+
+  // If the response isn't JSON but also not 204, return undefined as T
+  return undefined as T;
 }
 
 export const apiClient = {
-  get:  <T>(path: string) => request<T>(path),
-  post: <T>(path: string, body?: unknown) =>
-    request<T>(path, {
+  get<T>(path: string): Promise<T> {
+    return request<T>(path, { method: "GET" });
+  },
+
+  post<T>(path: string, body?: unknown): Promise<T> {
+    return request<T>(path, {
       method: "POST",
-      body: body ? JSON.stringify(body) : undefined,
-    }),
+      body: body != null ? JSON.stringify(body) : undefined,
+    });
+  },
+
+  put<T>(path: string, body?: unknown): Promise<T> {
+    return request<T>(path, {
+      method: "PUT",
+      body: body != null ? JSON.stringify(body) : undefined,
+    });
+  },
+
+  delete<T>(path: string): Promise<T> {
+    return request<T>(path, { method: "DELETE" });
+  },
 };

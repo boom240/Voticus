@@ -348,3 +348,7 @@ Voticus.Api/obj/Voticus.Api.csproj.nuget.dgspec.json
 Voticus.Api/obj/Voticus.Api.csproj.nuget.g.props
 
 Voticus.Api/obj/Voticus.Api.csproj.nuget.g.targets
+
+.vs/
+
+Voticus.Api/bin/

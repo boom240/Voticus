@@ -3,6 +3,8 @@ import type { PropsWithChildren } from "react";
 import type { PaletteMode } from "@mui/material";
 import { Link as RouterLink } from "react-router-dom";
 
+import { useAuth } from "../../context/AuthContext";
+
 import AppBar from "@mui/material/AppBar";
 import Box from "@mui/material/Box";
 import Toolbar from "@mui/material/Toolbar";
@@ -14,6 +16,8 @@ import Button from "@mui/material/Button";
 import HowToVoteIcon from "@mui/icons-material/HowToVote";
 import DarkModeIcon from "@mui/icons-material/DarkMode";
 import LightModeIcon from "@mui/icons-material/LightMode";
+
+const { user, logout } = useAuth();
 
 interface AppLayoutProps extends PropsWithChildren {
   colorMode: PaletteMode;
@@ -70,9 +74,28 @@ export function AppLayout({
             >
               Home
             </Button>
-            <Button color="inherit" size="small" disabled>
-              Account
-            </Button>
+            
+              {user ? (
+                <>
+                  <Typography variant="body2" sx={{ mr: 1 }}>
+                    {user}
+                  </Typography>
+                  <Button color="inherit" size="small" onClick={logout}>
+                    Logout
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Button color="inherit" size="small" component={RouterLink} to="/login">
+                    Login
+                  </Button>
+                  <Button color="inherit" size="small" component={RouterLink} to="/register">
+                    Register
+                  </Button>
+                </>
+              )}
+
+            
             <Button color="inherit" size="small" disabled>
               Settings
             </Button>
