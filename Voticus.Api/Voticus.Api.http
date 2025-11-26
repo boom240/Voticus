@@ -1,0 +1,6 @@
+@Voticus.Api_HostAddress = http://localhost:5273
+
+GET {{Voticus.Api_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
