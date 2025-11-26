@@ -1,4 +1,4 @@
-﻿namespace Voticus.Api.Models
+﻿namespace Voticus.Api.Contracts.Polls
 {
     public record EntryDto(
         int Id,

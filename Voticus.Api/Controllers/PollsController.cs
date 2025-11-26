@@ -1,168 +1,173 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using Voticus.Api.Models;
+using Microsoft.EntityFrameworkCore;
+using Voticus.Api.Contracts.Polls;
+using Voticus.Api.Data;
+using Voticus.Api.Domain;
 
-namespace Voticus.Api.Controllers; // <- keep this; project is Voticus.Api
+namespace Voticus.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
 public class PollsController : ControllerBase
 {
+    private readonly AppDbContext _db;
+
+    public PollsController(AppDbContext db)
+    {
+        _db = db;
+    }
+
     // GET /api/polls
     [HttpGet]
-    public ActionResult<IEnumerable<PollDto>> GetPolls()
+    public async Task<ActionResult<IEnumerable<PollDto>>> GetPolls()
     {
-        var populatedPolls = Polls.Select(p => p with { Entries = null });
+        var polls = await _db.Polls
+            .AsNoTracking()
+            .ToListAsync();
 
-        return Ok(populatedPolls);
+        var result = polls.Select(p => new PollDto(
+            Id: p.Id,
+            Title: p.Title,
+            Description: p.Description,
+            ImageUrl: p.ImageUrl,
+            FinishAtUtc: p.FinishAtUtc,
+            Entries: null // we don't include entries in the list view
+        ));
+
+        return Ok(result);
     }
 
     // GET /api/polls/{id}
     [HttpGet("{id:int}")]
-    public ActionResult<PollDto> GetPollById(int id)
+    public async Task<ActionResult<PollDto>> GetPollById(int id)
     {
-        var poll = Polls.SingleOrDefault(p => p.Id == id);
-        if (poll is null)
-            return NotFound();
+        var poll = await _db.Polls
+            .Include(p => p.Entries)
+            .AsNoTracking()
+            .SingleOrDefaultAsync(p => p.Id == id);
 
-        var pollEntries = Entries
-            .Where(e => e.PollId == id)
+        if (poll is null)
+        {
+            return NotFound();
+        }
+
+        var entries = poll.Entries
+            .OrderBy(e => e.Id)
+            .Select(e => new EntryDto(
+                Id: e.Id,
+                PollId: e.PollId,
+                Description: e.Description,
+                ImageUrl: e.ImageUrl,
+                VoteCount: e.VoteCount
+            ))
             .ToList();
 
-        return Ok(poll with { Entries = pollEntries });
+        var dto = new PollDto(
+            Id: poll.Id,
+            Title: poll.Title,
+            Description: poll.Description,
+            ImageUrl: poll.ImageUrl,
+            FinishAtUtc: poll.FinishAtUtc,
+            Entries: entries
+        );
+
+        return Ok(dto);
+    }
+
+    // POST /api/polls
+    [HttpPost]
+    public async Task<ActionResult<PollDto>> CreatePoll([FromBody] CreatePollRequest request)
+    {
+        if (string.IsNullOrWhiteSpace(request.Title))
+        {
+            return BadRequest("Title is required.");
+        }
+
+        var poll = new Poll
+        {
+            Title = request.Title.Trim(),
+            Description = request.Description?.Trim(),
+            ImageUrl = request.ImageUrl?.Trim(),
+            FinishAtUtc = request.FinishAtUtc?.ToUniversalTime()
+        };
+
+        _db.Polls.Add(poll);
+        await _db.SaveChangesAsync();
+
+        var dto = new PollDto(
+            Id: poll.Id,
+            Title: poll.Title,
+            Description: poll.Description,
+            ImageUrl: poll.ImageUrl,
+            FinishAtUtc: poll.FinishAtUtc,
+            Entries: new List<EntryDto>()
+        );
+
+        return CreatedAtAction(
+            nameof(GetPollById),
+            new { id = poll.Id },   // must match route param name
+            dto
+        );
     }
 
     // POST /api/polls/{pollId}/entries
     [HttpPost("{pollId:int}/entries")]
-    public ActionResult<EntryDto> CreateEntry(int pollId, [FromBody] CreateEntryRequest request)
+    public async Task<ActionResult<EntryDto>> CreateEntry(
+        int pollId,
+        [FromBody] CreateEntryRequest request)
     {
-        var poll = Polls.SingleOrDefault(p => p.Id == pollId);
-        if (poll is null)
+        var pollExists = await _db.Polls.AnyAsync(p => p.Id == pollId);
+        if (!pollExists)
+        {
             return NotFound($"Poll {pollId} not found.");
+        }
 
-        var nextId = Entries.Count == 0 ? 1 : Entries.Max(e => e.Id) + 1;
+        if (string.IsNullOrWhiteSpace(request.Description))
+        {
+            return BadRequest("Description is required.");
+        }
 
-        var entry = new EntryDto(
-            Id: nextId,
-            PollId: pollId,
-            Description: request.Description,
-            ImageUrl: request.ImageUrl,
-            VoteCount: 0
+        var entry = new Entry
+        {
+            PollId = pollId,
+            Description = request.Description.Trim(),
+            ImageUrl = request.ImageUrl?.Trim(),
+            VoteCount = 0
+        };
+
+        _db.Entries.Add(entry);
+        await _db.SaveChangesAsync();
+
+        var dto = new EntryDto(
+            Id: entry.Id,
+            PollId: entry.PollId,
+            Description: entry.Description,
+            ImageUrl: entry.ImageUrl,
+            VoteCount: entry.VoteCount
         );
-
-        Entries.Add(entry);
 
         return CreatedAtAction(
             nameof(GetPollById),
             new { id = pollId },
-            entry
+            dto
         );
     }
 
     // POST /api/polls/{pollId}/entries/{entryId}/vote
     [HttpPost("{pollId:int}/entries/{entryId:int}/vote")]
-    public IActionResult VoteForEntry(int pollId, int entryId)
+    public async Task<IActionResult> VoteForEntry(int pollId, int entryId)
     {
-        var poll = Polls.SingleOrDefault(p => p.Id == pollId);
-        if (poll is null)
-            return NotFound($"Poll {pollId} not found.");
+        var entry = await _db.Entries
+            .SingleOrDefaultAsync(e => e.PollId == pollId && e.Id == entryId);
 
-        var entry = Entries.SingleOrDefault(e => e.Id == entryId && e.PollId == pollId);
         if (entry is null)
-            return NotFound($"Entry {entryId} not found in poll {pollId}.");
+        {
+            return NotFound();
+        }
 
-        var updated = entry with { VoteCount = entry.VoteCount + 1 };
-
-        // replace in list
-        var index = Entries.FindIndex(e => e.Id == entryId);
-        Entries[index] = updated;
+        entry.VoteCount += 1;
+        await _db.SaveChangesAsync();
 
         return NoContent();
     }
-
-    [HttpPost]
-    public ActionResult<PollDto> CreatePoll([FromBody] CreatePollRequest request)
-    {
-        if (string.IsNullOrWhiteSpace(request.Title))
-            return BadRequest("Title is required.");
-
-        var nextId = Polls.Count == 0 ? 1 : Polls.Max(p => p.Id) + 1;
-
-        // enforce UTC
-        var finishUtc = request.FinishAtUtc?.ToUniversalTime();
-
-        var newPoll = new PollDto(
-            Id: nextId,
-            Title: request.Title,
-            Description: request.Description,
-            ImageUrl: request.ImageUrl,
-            FinishAtUtc: finishUtc,
-            Entries: new List<EntryDto>()
-        );
-
-        Polls.Add(newPoll);
-
-        return CreatedAtAction(
-            nameof(GetPollById),
-            new { id = newPoll.Id },
-            newPoll
-        );
-    }
-
-    // In-memory dummy data for now
-    private static readonly List<PollDto> Polls = new()
-    {
-        new PollDto(
-            Id: 1,
-            Title: "Best Programming Language",
-            Description: "Vote for your favourite language.",
-            ImageUrl: null,
-            FinishAtUtc: DateTime.UtcNow.AddDays(7)
-        ),
-        new PollDto(
-            Id: 2,
-            Title: "Best Pet",
-            Description: "Cats vs Dogs vs Others",
-            ImageUrl: null,
-            FinishAtUtc: DateTime.UtcNow.AddDays(3)
-        )
-    };
-
-    private static readonly List<EntryDto> Entries = new()
-    {
-        new EntryDto(
-            Id: 1,
-            PollId: 1,
-            Description: "C#",
-            ImageUrl: null,
-            VoteCount: 3
-        ),
-        new EntryDto(
-            Id: 2,
-            PollId: 1,
-            Description: "Python",
-            ImageUrl: null,
-            VoteCount: 5
-        ),
-        new EntryDto(
-            Id: 3,
-            PollId: 1,
-            Description: "JavaScript",
-            ImageUrl: null,
-            VoteCount: 2
-        ),
-        new EntryDto(
-            Id: 4,
-            PollId: 2,
-            Description: "Cats",
-            ImageUrl: null,
-            VoteCount: 4
-        ),
-        new EntryDto(
-            Id: 5,
-            PollId: 2,
-            Description: "Dogs",
-            ImageUrl: null,
-            VoteCount: 6
-        )
-    };
 }

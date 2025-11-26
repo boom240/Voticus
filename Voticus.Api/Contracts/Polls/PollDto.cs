@@ -1,6 +1,4 @@
-﻿using static Voticus.Api.Controllers.PollsController;
-
-namespace Voticus.Api.Models
+﻿namespace Voticus.Api.Contracts.Polls
 {
     public record PollDto(
         int Id,

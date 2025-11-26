@@ -13,32 +13,57 @@ interface PollCardProps {
 }
 
 export function PollCard({ poll }: PollCardProps) {
+  const ends =
+    poll.finishAtUtc != null
+      ? new Date(poll.finishAtUtc).toLocaleString()
+      : null;
+
   return (
-    <Card>
-      <CardActionArea component={Link} to={`/polls/${poll.id}`}>
+    <Card
+      sx={{
+        height: "100%",
+        display: "flex",
+        flexDirection: "column",
+        boxShadow: 3,
+      }}
+    >
+      <CardActionArea
+        component={Link}
+        to={`/polls/${poll.id}`}
+        sx={{ flexGrow: 1, display: "flex", flexDirection: "column" }}
+      >
         {poll.imageUrl && (
           <CardMedia
             component="img"
-            height="160"
             image={poll.imageUrl}
             alt={poll.title}
+            sx={{
+              width: "100%",
+              height: 180,
+              objectFit: "cover",
+            }}
           />
         )}
-        <CardContent>
-          <Typography variant="h6" gutterBottom>
+        <CardContent sx={{ width: "100%" }}>
+          <Typography variant="h6" gutterBottom noWrap>
             {poll.title}
           </Typography>
 
           {poll.description && (
-            <Typography variant="body2" color="text.secondary">
+            <Typography
+              variant="body2"
+              color="text.secondary"
+              sx={{ mb: 1 }}
+              noWrap
+            >
               {poll.description}
             </Typography>
           )}
 
-          {poll.finishAtUtc && (
-            <Box mt={1}>
+          {ends && (
+            <Box>
               <Typography variant="caption" color="text.secondary">
-                Ends: {new Date(poll.finishAtUtc).toLocaleString()}
+                Ends: {ends}
               </Typography>
             </Box>
           )}

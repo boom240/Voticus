@@ -15,21 +15,37 @@ interface EntryCardProps {
 
 export function EntryCard({ entry, onVote, isVoting }: EntryCardProps) {
   return (
-    <Card>
+    <Card
+      sx={{
+        height: "100%",
+        display: "flex",
+        flexDirection: "column",
+        boxShadow: 2,
+      }}
+    >
       {entry.imageUrl && (
         <CardMedia
           component="img"
-          height="200"
           image={entry.imageUrl}
           alt={entry.description}
+          sx={{
+            width: "100%",
+            height: 200,
+            objectFit: "cover",
+          }}
         />
       )}
-      <CardContent>
-        <Typography variant="body1" gutterBottom>
+      <CardContent sx={{ flexGrow: 1 }}>
+        <Typography variant="body1" gutterBottom noWrap>
           {entry.description}
         </Typography>
 
-        <Stack direction="row" justifyContent="space-between" alignItems="center">
+        <Stack
+          direction="row"
+          justifyContent="space-between"
+          alignItems="center"
+          sx={{ mt: 1 }}
+        >
           <Typography variant="body2" color="text.secondary">
             Votes: {entry.voteCount}
           </Typography>

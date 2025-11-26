@@ -131,7 +131,7 @@ export function PollDetailPage() {
       ) : (
         <Grid container spacing={3}>
           {entriesSorted.map((entry) => (
-            <Grid key={entry.id} size={{ xs: 12, sm: 6 }}>
+            <Grid key={entry.id} size={{ xs: 12, sm: 6, md: 4 }}>
               <EntryCard
                 entry={entry}
                 onVote={() => handleVote(entry.id)}
@@ -141,7 +141,7 @@ export function PollDetailPage() {
           ))}
         </Grid>
       )}
-      
+
       <CreateEntryForm
         pollId={poll.id}
         onCreated={handleEntryCreated}

@@ -1,7 +1,18 @@
+using Microsoft.EntityFrameworkCore;
+using Voticus.Api.Data;
+
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddControllers();
+
+// Add DbContext with SQLite
+builder.Services.AddDbContext<AppDbContext>(options =>
+{
+    options.UseSqlite(
+        builder.Configuration.GetConnectionString("DefaultConnection"));
+});
 
 // CORS so React (Vite) can call the API
 builder.Services.AddCors(options =>

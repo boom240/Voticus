@@ -50,11 +50,11 @@ export function PollListPage() {
         <Typography>No polls yet. Create your first one!</Typography>
       ) : (
         <Grid container spacing={3}>
-            {polls.map((poll) => (
-                <Grid key={poll.id} size={{ xs: 12, sm: 6 }}>
-                <PollCard poll={poll} />
-                </Grid>
-            ))}
+          {polls.map((poll) => (
+            <Grid key={poll.id} size={{ xs: 12, sm: 6, md: 4 }}>
+              <PollCard poll={poll} />
+            </Grid>
+          ))}
         </Grid>
       )}
     </>
