@@ -11,9 +11,10 @@ interface EntryCardProps {
   entry: EntryDto;
   onVote: () => void;
   isVoting?: boolean;
+  canVote: boolean;
 }
 
-export function EntryCard({ entry, onVote, isVoting }: EntryCardProps) {
+export function EntryCard({ entry, onVote, isVoting, canVote }: EntryCardProps) {
   return (
     <Card
       sx={{
@@ -53,9 +54,9 @@ export function EntryCard({ entry, onVote, isVoting }: EntryCardProps) {
             variant="contained"
             size="small"
             onClick={onVote}
-            disabled={isVoting}
+            disabled={isVoting || !canVote}
           >
-            {isVoting ? "Voting..." : "Vote"}
+            {!canVote ? "Login to vote" : isVoting ? "Voting..." : "Vote"}
           </Button>
         </Stack>
       </CardContent>

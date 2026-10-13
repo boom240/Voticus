@@ -14,16 +14,17 @@ import { EntryCard } from "../components/polls/EntryCard";
 import { CreateEntryForm } from "../components/polls/CreateEntryForm";
 
 import type { PollDto, EntryDto } from "../types/poll";
+import { useAuth } from "../context/AuthContext";
 
 export function PollDetailPage() {
   const { id } = useParams();
   const pollId = Number(id);
-
   const [poll, setPoll] = useState<PollDto | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [votingEntryId, setVotingEntryId] = useState<number | null>(null);
   const [sortByVotes, setSortByVotes] = useState(true);
+  const { user } = useAuth();
 
   useEffect(() => {
     if (!pollId || Number.isNaN(pollId)) {
@@ -55,6 +56,11 @@ export function PollDetailPage() {
 
   const handleVote = async (entryId: number) => {
     if (!poll) return;
+
+    if (!user) {
+      setError("You must be logged in to vote.");
+      return;
+    }
 
     try {
       setVotingEntryId(entryId);
@@ -136,16 +142,27 @@ export function PollDetailPage() {
                 entry={entry}
                 onVote={() => handleVote(entry.id)}
                 isVoting={votingEntryId === entry.id}
+                canVote={!!user}
               />
             </Grid>
           ))}
         </Grid>
       )}
 
-      <CreateEntryForm
-        pollId={poll.id}
-        onCreated={handleEntryCreated}
-      />
+      {user ? (
+        <CreateEntryForm
+          pollId={poll.id}
+          onCreated={handleEntryCreated}
+        />
+      ) : (
+        <Typography
+          variant="body2"
+          color="text.secondary"
+          sx={{ mt: 4 }}
+        >
+          Login or register to add an entry.
+        </Typography>
+      )}
     </>
   );
 }

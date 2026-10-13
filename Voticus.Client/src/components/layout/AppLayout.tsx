@@ -17,8 +17,6 @@ import HowToVoteIcon from "@mui/icons-material/HowToVote";
 import DarkModeIcon from "@mui/icons-material/DarkMode";
 import LightModeIcon from "@mui/icons-material/LightMode";
 
-const { user, logout } = useAuth();
-
 interface AppLayoutProps extends PropsWithChildren {
   colorMode: PaletteMode;
   onToggleColorMode: () => void;
@@ -29,6 +27,9 @@ export function AppLayout({
   colorMode,
   onToggleColorMode,
 }: AppLayoutProps) {
+  
+  const { user, logout } = useAuth();
+
   return (
     <Box
       minHeight="100vh"

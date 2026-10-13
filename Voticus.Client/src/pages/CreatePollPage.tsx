@@ -9,6 +9,7 @@ import Typography from "@mui/material/Typography";
 import Alert from "@mui/material/Alert";
 
 import { createPoll } from "../api/polls";
+import { useAuth } from "../context/AuthContext";
 
 export function CreatePollPage() {
   const navigate = useNavigate();
@@ -19,6 +20,7 @@ export function CreatePollPage() {
   const [finishAt, setFinishAt] = useState(""); // HTML datetime-local value
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { user } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -56,6 +58,20 @@ export function CreatePollPage() {
     }
   };
 
+  //show if not logged in
+  if (!user) {
+    return (
+      <>
+        <Typography variant="h4" gutterBottom>
+          Create Poll
+        </Typography>
+        <Alert severity="info">
+          You must be logged in to create a poll.
+        </Alert>
+      </>
+    );
+  }
+  //show if logged in
   return (
     <>
       <Typography variant="h4" gutterBottom>
