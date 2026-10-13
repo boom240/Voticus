@@ -5,6 +5,7 @@ namespace Voticus.Api.Domain
 {
     public class User : IdentityUser
     {
-         public string DisplayName { get; set; } = default!;
+        // Later when we come to implement an account page, we can add more properties here
+        //public string DisplayName { get; set; } = default!;
     }
 }
