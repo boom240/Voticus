@@ -35,7 +35,10 @@ public class AuthController : ControllerBase
         var result = await _userManager.CreateAsync(user, request.Password);
 
         if (!result.Succeeded)
-            return BadRequest(result.Errors);
+        {
+            var errors = result.Errors.Select(e => e.Description).ToArray();
+            return BadRequest(new { errors });
+        }
 
         return Ok();
     }

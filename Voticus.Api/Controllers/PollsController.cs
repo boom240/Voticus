@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using Voticus.Api.Contracts.Polls;
 using Voticus.Api.Data;
@@ -18,6 +19,7 @@ public class PollsController : ControllerBase
     }
 
     // GET /api/polls
+    [AllowAnonymous]
     [HttpGet]
     public async Task<ActionResult<IEnumerable<PollDto>>> GetPolls()
     {
@@ -38,6 +40,7 @@ public class PollsController : ControllerBase
     }
 
     // GET /api/polls/{id}
+    [AllowAnonymous]
     [HttpGet("{id:int}")]
     public async Task<ActionResult<PollDto>> GetPollById(int id)
     {
@@ -75,6 +78,7 @@ public class PollsController : ControllerBase
     }
 
     // POST /api/polls
+    [Authorize]
     [HttpPost]
     public async Task<ActionResult<PollDto>> CreatePoll([FromBody] CreatePollRequest request)
     {
@@ -111,6 +115,7 @@ public class PollsController : ControllerBase
     }
 
     // POST /api/polls/{pollId}/entries
+    [Authorize]
     [HttpPost("{pollId:int}/entries")]
     public async Task<ActionResult<EntryDto>> CreateEntry(
         int pollId,
@@ -154,6 +159,7 @@ public class PollsController : ControllerBase
     }
 
     // POST /api/polls/{pollId}/entries/{entryId}/vote
+    [Authorize]
     [HttpPost("{pollId:int}/entries/{entryId:int}/vote")]
     public async Task<IActionResult> VoteForEntry(int pollId, int entryId)
     {
