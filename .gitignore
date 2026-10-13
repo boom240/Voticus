@@ -354,3 +354,8 @@ Voticus.Api/obj/Voticus.Api.csproj.nuget.g.targets
 Voticus.Api/bin/
 
 Voticus.Api/obj/
+
+# Local SQLite databases (use Azure SQL in hosted environments)
+*.db
+*.db-shm
+*.db-wal
