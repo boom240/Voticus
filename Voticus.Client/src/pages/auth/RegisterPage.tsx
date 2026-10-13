@@ -15,21 +15,23 @@ export function RegisterPage() {
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<boolean>(false);
+  const [errorMessages, setErrorMessages] = useState<string[] | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    const ok = await register(email, password);
+    const result = await register(email, password);
 
-    if (!ok) {
-      setError("Registration failed.");
+    if (!result.success) {
+      setSuccess(false);
+      setErrorMessages(result.errors ?? ["Registration failed."]);
       return;
     }
 
+    setErrorMessages(null);
     setSuccess(true);
-    setError(null);
+
     setTimeout(() => navigate("/login"), 1500);
   };
 
@@ -37,7 +39,19 @@ export function RegisterPage() {
     <Stack spacing={3} maxWidth={400}>
       <Typography variant="h5">Register</Typography>
 
-      {error && <Alert severity="error">{error}</Alert>}
+      {errorMessages && (
+        <Alert severity="error">
+          {errorMessages.length === 1 ? (
+            errorMessages[0]
+          ) : (
+            <ul style={{ margin: 0, paddingLeft: "1.2rem" }}>
+              {errorMessages.map((msg, idx) => (
+                <li key={idx}>{msg}</li>
+              ))}
+            </ul>
+          )}
+        </Alert>
+      )}
       {success && <Alert severity="success">Account created!</Alert>}
 
       <form onSubmit={handleSubmit}>

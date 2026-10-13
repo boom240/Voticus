@@ -12,7 +12,10 @@ interface AuthContextValue {
   user: string | null;
   token: string | null;
   login: (email: string, password: string) => Promise<boolean>;
-  register: (email: string, password: string) => Promise<boolean>;
+  register: (
+    email: string,
+    password: string
+  ) => Promise<{ success: boolean; errors?: string[] }>;
   logout: () => void;
 }
 
@@ -52,15 +55,41 @@ export function AuthProvider({ children }: PropsWithChildren) {
     return true;
   };
 
-  const register = async (email: string, password: string) => {
-    const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/auth/register`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password }),
-    });
+  const register = async (
+    email: string,
+    password: string
+  ): Promise<{ success: boolean; errors?: string[] }> => {
+    const res = await fetch(
+      `${import.meta.env.VITE_API_BASE_URL}/api/auth/register`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      }
+    );
 
-    return res.ok;
+    if (!res.ok) {
+      try {
+        const data = await res.json();
+        if (Array.isArray(data)) {
+          // in case backend ever returns the raw IdentityError[]
+          return {
+            success: false,
+            errors: data.map((x: any) => x.description ?? String(x)),
+          };
+        }
+        if (data && Array.isArray(data.errors)) {
+          return { success: false, errors: data.errors as string[] };
+        }
+        return { success: false, errors: ["Registration failed."] };
+      } catch {
+        return { success: false, errors: ["Registration failed."] };
+      }
+    }
+
+    return { success: true };
   };
+
 
   const logout = () => {
     setUser(null);
