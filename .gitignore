@@ -359,3 +359,17 @@ Voticus.Api/obj/
 *.db
 *.db-shm
 *.db-wal
+
+# Uploaded images (development)
+Voticus.Api/App_Data/
+
+# Test results
+TestResults/
+*.db.backup-*
+
+# Claude Code session config
+.claude/
+
+# Build output for any project
+[Bb]in/
+[Oo]bj/

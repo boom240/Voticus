@@ -1,3 +1,7 @@
-﻿namespace Voticus.Api.Contracts.Auth;
+using System.ComponentModel.DataAnnotations;
 
-public record LoginRequest(string Email, string Password);
+namespace Voticus.Api.Contracts.Auth;
+
+public record LoginRequest(
+    [Required, EmailAddress] string Email,
+    [Required] string Password);

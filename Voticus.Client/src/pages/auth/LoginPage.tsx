@@ -1,66 +1,76 @@
-// src/pages/auth/LoginPage.tsx
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { useAuth } from "../../context/AuthContext";
-
-import TextField from "@mui/material/TextField";
-import Button from "@mui/material/Button";
-import Stack from "@mui/material/Stack";
-import Typography from "@mui/material/Typography";
-import Alert from "@mui/material/Alert";
+import { useState, type FormEvent } from 'react'
+import { Link as RouterLink, useLocation, useNavigate } from 'react-router-dom'
+import Button from '@mui/material/Button'
+import Link from '@mui/material/Link'
+import Paper from '@mui/material/Paper'
+import Stack from '@mui/material/Stack'
+import TextField from '@mui/material/TextField'
+import Typography from '@mui/material/Typography'
+import { useAuth } from '../../context/AuthContext'
+import { errorMessage } from '../../api/client'
 
 export function LoginPage() {
-  const { login } = useAuth();
-  const navigate = useNavigate();
+  const { login } = useAuth()
+  const navigate = useNavigate()
+  const location = useLocation()
+  const from = (location.state as { from?: string } | null)?.from ?? '/'
 
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState<string | null>(null);
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [error, setError] = useState<string | null>(null)
+  const [busy, setBusy] = useState(false)
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    const ok = await login(email, password);
-
-    if (!ok) {
-      setError("Invalid email or password.");
-      return;
+  const handleSubmit = async (e: FormEvent) => {
+    e.preventDefault()
+    setError(null)
+    setBusy(true)
+    try {
+      await login(email, password)
+      navigate(from, { replace: true })
+    } catch (err) {
+      setError(errorMessage(err, 'Invalid email or password.'))
+    } finally {
+      setBusy(false)
     }
-
-    navigate("/");
-  };
+  }
 
   return (
-    <Stack spacing={3} maxWidth={400}>
-      <Typography variant="h5">Login</Typography>
-
-      {error && <Alert severity="error">{error}</Alert>}
-
-      <form onSubmit={handleSubmit}>
+    <Paper variant="outlined" sx={{ maxWidth: 440, mx: 'auto', p: { xs: 3, sm: 4 }, borderRadius: 3 }}>
+      <Typography variant="h1" component="h1" gutterBottom>
+        Log in
+      </Typography>
+      <form onSubmit={handleSubmit} noValidate>
         <Stack spacing={2}>
           <TextField
             label="Email"
             type="email"
-            fullWidth
+            autoComplete="email"
             required
             value={email}
             onChange={(e) => setEmail(e.target.value)}
+            error={error != null}
           />
-
           <TextField
             label="Password"
             type="password"
-            fullWidth
+            autoComplete="current-password"
             required
             value={password}
             onChange={(e) => setPassword(e.target.value)}
+            error={error != null}
+            helperText={error ?? ' '}
           />
-
-          <Button variant="contained" type="submit">
-            Login
+          <Button type="submit" variant="contained" disabled={busy} size="large">
+            {busy ? 'Logging in' : 'Log in'}
           </Button>
+          <Typography variant="body2" color="text.secondary">
+            No account yet?{' '}
+            <Link component={RouterLink} to="/register">
+              Register
+            </Link>
+          </Typography>
         </Stack>
       </form>
-    </Stack>
-  );
+    </Paper>
+  )
 }

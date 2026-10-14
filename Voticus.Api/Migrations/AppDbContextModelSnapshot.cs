@@ -145,54 +145,189 @@ namespace Voticus.Api.Migrations
                     b.ToTable("AspNetUserTokens", (string)null);
                 });
 
+            modelBuilder.Entity("Voticus.Api.Domain.AuditLog", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Action")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ActorEmail")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ActorUserId")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<int?>("CompetitionId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("EntityId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("EntityType")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("NewValue")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("OldValue")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CompetitionId");
+
+                    b.ToTable("AuditLogs");
+                });
+
+            modelBuilder.Entity("Voticus.Api.Domain.Competition", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int?>("ApprovedMembersAtClose")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime?>("ArchivedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("CreatedByUserId")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(2000)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("EndsAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("PublishedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("StartsAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("UpdatedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("EndsAtUtc");
+
+                    b.ToTable("Competitions");
+                });
+
             modelBuilder.Entity("Voticus.Api.Domain.Entry", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
 
+                    b.Property<int>("CompetitionId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("Description")
                         .IsRequired()
+                        .HasMaxLength(1000)
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("ImageUrl")
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(100)
                         .HasColumnType("TEXT");
 
-                    b.Property<int>("PollId")
-                        .HasColumnType("INTEGER");
+                    b.Property<DateTime>("UpdatedAtUtc")
+                        .HasColumnType("TEXT");
 
-                    b.Property<int>("VoteCount")
-                        .HasColumnType("INTEGER");
+                    b.Property<string>("UserId")
+                        .HasColumnType("TEXT");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("PollId");
+                    b.HasIndex("UserId");
+
+                    b.HasIndex("CompetitionId", "UserId")
+                        .IsUnique();
 
                     b.ToTable("Entries");
                 });
 
-            modelBuilder.Entity("Voticus.Api.Domain.Poll", b =>
+            modelBuilder.Entity("Voticus.Api.Domain.EntryImage", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
 
-                    b.Property<string>("Description")
+                    b.Property<string>("AltText")
+                        .IsRequired()
+                        .HasMaxLength(200)
                         .HasColumnType("TEXT");
 
-                    b.Property<DateTime?>("FinishAtUtc")
+                    b.Property<string>("ContentType")
+                        .IsRequired()
+                        .HasMaxLength(64)
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("ImageUrl")
-                        .HasColumnType("TEXT");
+                    b.Property<int>("EntryId")
+                        .HasColumnType("INTEGER");
 
-                    b.Property<string>("Title")
+                    b.Property<int>("Height")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("PlaceholderDataUrl")
                         .IsRequired()
                         .HasColumnType("TEXT");
 
+                    b.Property<int>("Position")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<long>("SizeBytes")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("StorageKey")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ThumbnailKey")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Width")
+                        .HasColumnType("INTEGER");
+
                     b.HasKey("Id");
 
-                    b.ToTable("Polls");
+                    b.HasIndex("EntryId", "Position")
+                        .IsUnique();
+
+                    b.ToTable("EntryImages");
                 });
 
             modelBuilder.Entity("Voticus.Api.Domain.User", b =>
@@ -205,6 +340,9 @@ namespace Voticus.Api.Migrations
 
                     b.Property<string>("ConcurrencyStamp")
                         .IsConcurrencyToken()
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAtUtc")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("Email")
@@ -257,6 +395,37 @@ namespace Voticus.Api.Migrations
                         .HasDatabaseName("UserNameIndex");
 
                     b.ToTable("AspNetUsers", (string)null);
+                });
+
+            modelBuilder.Entity("Voticus.Api.Domain.Vote", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("CompetitionId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("EntryId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("EntryId");
+
+                    b.HasIndex("UserId");
+
+                    b.HasIndex("CompetitionId", "UserId")
+                        .IsUnique();
+
+                    b.ToTable("Votes");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
@@ -312,18 +481,79 @@ namespace Voticus.Api.Migrations
 
             modelBuilder.Entity("Voticus.Api.Domain.Entry", b =>
                 {
-                    b.HasOne("Voticus.Api.Domain.Poll", "Poll")
+                    b.HasOne("Voticus.Api.Domain.Competition", "Competition")
                         .WithMany("Entries")
-                        .HasForeignKey("PollId")
+                        .HasForeignKey("CompetitionId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("Poll");
+                    b.HasOne("Voticus.Api.Domain.User", "User")
+                        .WithMany("Entries")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("Competition");
+
+                    b.Navigation("User");
                 });
 
-            modelBuilder.Entity("Voticus.Api.Domain.Poll", b =>
+            modelBuilder.Entity("Voticus.Api.Domain.EntryImage", b =>
+                {
+                    b.HasOne("Voticus.Api.Domain.Entry", "Entry")
+                        .WithMany("Images")
+                        .HasForeignKey("EntryId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Entry");
+                });
+
+            modelBuilder.Entity("Voticus.Api.Domain.Vote", b =>
+                {
+                    b.HasOne("Voticus.Api.Domain.Competition", "Competition")
+                        .WithMany("Votes")
+                        .HasForeignKey("CompetitionId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Voticus.Api.Domain.Entry", "Entry")
+                        .WithMany("Votes")
+                        .HasForeignKey("EntryId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Voticus.Api.Domain.User", "User")
+                        .WithMany("Votes")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Competition");
+
+                    b.Navigation("Entry");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("Voticus.Api.Domain.Competition", b =>
                 {
                     b.Navigation("Entries");
+
+                    b.Navigation("Votes");
+                });
+
+            modelBuilder.Entity("Voticus.Api.Domain.Entry", b =>
+                {
+                    b.Navigation("Images");
+
+                    b.Navigation("Votes");
+                });
+
+            modelBuilder.Entity("Voticus.Api.Domain.User", b =>
+                {
+                    b.Navigation("Entries");
+
+                    b.Navigation("Votes");
                 });
 #pragma warning restore 612, 618
         }

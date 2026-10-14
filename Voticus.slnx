@@ -1,3 +1,4 @@
 <Solution>
   <Project Path="Voticus.Api/Voticus.Api.csproj" />
+  <Project Path="Voticus.Api.Tests/Voticus.Api.Tests.csproj" />
 </Solution>

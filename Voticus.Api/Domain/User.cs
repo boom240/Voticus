@@ -1,11 +1,11 @@
-﻿using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity;
 
-namespace Voticus.Api.Domain
+namespace Voticus.Api.Domain;
 
+public class User : IdentityUser
 {
-    public class User : IdentityUser
-    {
-        // Later when we come to implement an account page, we can add more properties here
-        //public string DisplayName { get; set; } = default!;
-    }
+    public DateTime CreatedAtUtc { get; set; }
+
+    public ICollection<Entry> Entries { get; set; } = new List<Entry>();
+    public ICollection<Vote> Votes { get; set; } = new List<Vote>();
 }

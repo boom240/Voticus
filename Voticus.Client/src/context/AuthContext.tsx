@@ -1,114 +1,111 @@
-// src/context/AuthContext.tsx
 import {
   createContext,
+  useCallback,
   useContext,
-  useState,
   useEffect,
-} from "react";
+  useMemo,
+  useState,
+  type PropsWithChildren,
+} from 'react'
+import * as authApi from '../api/auth'
+import { ApiError, getToken, setToken } from '../api/client'
+import type { CurrentUser } from '../types/auth'
 
-import type { PropsWithChildren } from "react";
+export interface AuthUser extends CurrentUser {
+  isApproved: boolean
+  isAdmin: boolean
+}
 
 interface AuthContextValue {
-  user: string | null;
-  token: string | null;
-  login: (email: string, password: string) => Promise<boolean>;
-  register: (
-    email: string,
-    password: string
-  ) => Promise<{ success: boolean; errors?: string[] }>;
-  logout: () => void;
+  user: AuthUser | null
+  // True until the stored token has been checked against the API.
+  loading: boolean
+  login: (email: string, password: string) => Promise<void>
+  register: (email: string, password: string) => Promise<void>
+  logout: () => void
+  refresh: () => Promise<void>
 }
 
-const AuthContext = createContext<AuthContextValue | undefined>(undefined);
+const AuthContext = createContext<AuthContextValue | undefined>(undefined)
 
-export function AuthProvider({ children }: PropsWithChildren) {
-  const [token, setToken] = useState<string | null>(() =>
-    localStorage.getItem("token")
-  );
+function toAuthUser(me: CurrentUser): AuthUser {
+  return {
+    ...me,
+    isApproved: me.roles.includes('Approved'),
+    isAdmin: me.roles.includes('Admin'),
+  }
+}
 
-  const [user, setUser] = useState<string | null>(() =>
-    localStorage.getItem("user")
-  );
-
-  useEffect(() => {
-    if (token) localStorage.setItem("token", token);
-    else localStorage.removeItem("token");
-
-    if (user) localStorage.setItem("user", user);
-    else localStorage.removeItem("user");
-  }, [token, user]);
-
-  const login = async (email: string, password: string) => {
-    const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/auth/login`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password }),
-    });
-
-    if (!res.ok) return false;
-
-    const data = await res.json();
-
-    setToken(data.token);
-    setUser(email);
-
-    return true;
-  };
-
-  const register = async (
-    email: string,
-    password: string
-  ): Promise<{ success: boolean; errors?: string[] }> => {
-    const res = await fetch(
-      `${import.meta.env.VITE_API_BASE_URL}/api/auth/register`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
-      }
-    );
-
-    if (!res.ok) {
-      try {
-        const data = await res.json();
-        if (Array.isArray(data)) {
-          // in case backend ever returns the raw IdentityError[]
-          return {
-            success: false,
-            errors: data.map((x: any) => x.description ?? String(x)),
-          };
-        }
-        if (data && Array.isArray(data.errors)) {
-          return { success: false, errors: data.errors as string[] };
-        }
-        return { success: false, errors: ["Registration failed."] };
-      } catch {
-        return { success: false, errors: ["Registration failed."] };
-      }
+// Fetches the current user for the stored token. Null when there is no valid session.
+async function fetchUser(): Promise<AuthUser | null> {
+  if (!getToken()) return null
+  try {
+    return toAuthUser(await authApi.getMe())
+  } catch (err) {
+    if (err instanceof ApiError && (err.status === 401 || err.status === 404)) {
+      setToken(null)
+      return null
     }
-
-    return { success: true };
-  };
-
-
-  const logout = () => {
-    setUser(null);
-    setToken(null);
-  };
-
-  const value: AuthContextValue = {
-    user,
-    token,
-    login,
-    register,
-    logout,
-  };
-
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+    throw err
+  }
 }
 
+export function AuthProvider({ children, initialUser }: PropsWithChildren<{ initialUser?: AuthUser | null }>) {
+  const [user, setUser] = useState<AuthUser | null>(initialUser ?? null)
+  const [loading, setLoading] = useState(initialUser === undefined && getToken() != null)
+
+  // Roles come from the server on every load so approval shows without a new login.
+  useEffect(() => {
+    if (initialUser !== undefined) return
+    let cancelled = false
+    fetchUser()
+      .then((u) => {
+        if (!cancelled) setUser(u)
+      })
+      .catch(() => {
+        // Network trouble. Keep whatever state we had.
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [initialUser])
+
+  const refresh = useCallback(async () => {
+    setUser(await fetchUser())
+  }, [])
+
+  const login = useCallback(
+    async (email: string, password: string) => {
+      const { token } = await authApi.login(email, password)
+      setToken(token)
+      await refresh()
+    },
+    [refresh],
+  )
+
+  const register = useCallback(async (email: string, password: string) => {
+    await authApi.register(email, password)
+  }, [])
+
+  const logout = useCallback(() => {
+    setToken(null)
+    setUser(null)
+  }, [])
+
+  const value = useMemo(
+    () => ({ user, loading, login, register, logout, refresh }),
+    [user, loading, login, register, logout, refresh],
+  )
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
+}
+
+// eslint-disable-next-line react-refresh/only-export-components
 export function useAuth() {
-  const ctx = useContext(AuthContext);
-  if (!ctx) throw new Error("useAuth() must be inside <AuthProvider>");
-  return ctx;
+  const ctx = useContext(AuthContext)
+  if (!ctx) throw new Error('useAuth must be used inside AuthProvider')
+  return ctx
 }
